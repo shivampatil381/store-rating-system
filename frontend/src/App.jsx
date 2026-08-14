@@ -12,18 +12,15 @@ import Register from "./pages/auth/Register";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminStores from "./pages/admin/AdminStores";
-import AdminCreate from "./pages/admin/AdminCreate";
 
 import UserDashboard from "./pages/user/UserDashboard";
-import UserStores from "./pages/user/UserStores";
-import UserRating from "./pages/user/UserRating";
 import UserPassword from "./pages/user/UserPassword";
 
 import OwnerDashboard from "./pages/owner/OwnerDashboard";
-import OwnerRatings from "./pages/owner/OwnerRatings";
 import OwnerPassword from "./pages/owner/OwnerPassword";
 
 import Unauthorized from "./pages/Unauthorized";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
@@ -67,15 +64,6 @@ function App() {
             }
           />
 
-          <Route
-            path="/admin/create"
-            element={
-              <ProtectedRoute allowedRoles={["ADMIN"]}>
-                <AdminCreate />
-              </ProtectedRoute>
-            }
-          />
-
           {/* User */}
 
           <Route
@@ -83,24 +71,6 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["USER"]}>
                 <UserDashboard />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/user/stores"
-            element={
-              <ProtectedRoute allowedRoles={["USER"]}>
-                <UserStores />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/user/rate/:storeId"
-            element={
-              <ProtectedRoute allowedRoles={["USER"]}>
-                <UserRating />
               </ProtectedRoute>
             }
           />
@@ -126,15 +96,6 @@ function App() {
           />
 
           <Route
-            path="/owner/ratings"
-            element={
-              <ProtectedRoute allowedRoles={["OWNER"]}>
-                <OwnerRatings />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
             path="/owner/password"
             element={
               <ProtectedRoute allowedRoles={["OWNER"]}>
@@ -145,6 +106,10 @@ function App() {
 
           {/* Unauthorized */}
           <Route path="/unauthorized" element={<Unauthorized />} />
+
+          {/* Other routes */}
+
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

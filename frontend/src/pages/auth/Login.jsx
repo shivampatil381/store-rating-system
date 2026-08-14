@@ -1,11 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 
 function Login() {
   const { login } = useAuth();
-
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -13,8 +12,19 @@ function Login() {
     password: "",
   });
 
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Auto-dismiss floating error toast after 4 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError("");
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   const handleChange = (e) => {
     setFormData({
@@ -32,8 +42,6 @@ function Login() {
     try {
       const response = await api.post("/auth/login", formData);
 
-      console.log(response.data);
-
       const { token, user } = response.data;
 
       login(token, user);
@@ -46,10 +54,9 @@ function Login() {
       } else {
         navigate("/user/dashboard");
       }
-    } catch (error) {
-      console.error(error);
-
-      setError(error.response?.data?.message || "Login failed");
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.message || "Invalid email or password");
     } finally {
       setLoading(false);
     }
@@ -57,20 +64,42 @@ function Login() {
 
   return (
     <div className="auth-container">
+      {/* Floating Overlay Toast Messages */}
+      <div className="toast-container" aria-live="polite">
+        {error && (
+          <div className="toast-item toast-error">
+            <span className="toast-icon">✕</span>
+            <span className="toast-text">{error}</span>
+            <button
+              type="button"
+              className="toast-close"
+              onClick={() => setError("")}
+              aria-label="Close notification"
+            >
+              ×
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Main Login Card */}
       <div className="auth-card">
-        {/* <h2>Store Rating System</h2> */}
-
-        <h3>Login</h3>
-
-        {error && <div className="error-message">{error}</div>}
+        <div className="auth-header">
+          <h2>Store Rating System</h2>
+          <h3>Login</h3>
+          <p className="subtitle">
+            Welcome back! Please enter your credentials.
+          </p>
+        </div>
 
         <form onSubmit={handleSubmit}>
           <div>
-            <label>Email</label>
-
+            <label htmlFor="email">Email</label>
             <input
+              id="email"
               type="email"
               name="email"
+              placeholder="Enter your email"
               value={formData.email}
               onChange={handleChange}
               required
@@ -78,15 +107,26 @@ function Login() {
           </div>
 
           <div>
-            <label>Password</label>
-
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
+            <label htmlFor="password">Password</label>
+            <div className="input-group">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Enter your password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+              <button
+                type="button"
+                className="toggle-visibility"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex="-1"
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
           </div>
 
           <button type="submit" disabled={loading}>
@@ -96,14 +136,7 @@ function Login() {
 
         <p>
           Don't have an account?{" "}
-          <span
-            onClick={() => navigate("/register")}
-            style={{
-              cursor: "pointer",
-            }}
-          >
-            Register
-          </span>
+          <span onClick={() => navigate("/register")}>Register</span>
         </p>
       </div>
     </div>

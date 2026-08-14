@@ -6,8 +6,8 @@ const authorize = require("../middleware/roleMiddleware");
 const {
     getStores,
     submitRating,
-    updateRating,
-    updatePassword
+    updatePassword,
+    getStoresById
 } = require("../controllers/userController");
 
 const router = express.Router();
@@ -19,18 +19,18 @@ router.get(
     getStores
 );
 
+router.get(
+    "/stores/:storeId",
+    authenticate,
+    authorize("USER"),
+    getStoresById
+);
+
 router.post(
-    "/ratings",
+    "/rating",
     authenticate,
     authorize("USER"),
     submitRating
-);
-
-router.put(
-    "/ratings/:storeId",
-    authenticate,
-    authorize("USER"),
-    updateRating
 );
 
 router.put(

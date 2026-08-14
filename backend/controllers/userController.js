@@ -33,7 +33,7 @@ const getStores = async (req, res) => {
                 s.name,
                 s.address,
 
-                COALESCE(AVG(all_ratings.rating), 0)
+                COALESCE(ROUND(AVG(all_ratings.rating), 1), 0)
                     AS average_rating,
 
                 user_rating.rating
@@ -120,7 +120,7 @@ const submitRating = async (req, res) => {
             });
         }
 
-        // Check whether user already rated this store
+        // Check existing rating
         const [existingRating] = await db.query(
             `SELECT id
              FROM ratings
@@ -129,17 +129,38 @@ const submitRating = async (req, res) => {
             [userId, store_id]
         );
 
+        // ==========================================
+        // EXISTING RATING → UPDATE
+        // ==========================================
+
         if (existingRating.length > 0) {
-            return res.status(409).json({
-                message: "You have already rated this store"
+
+            await db.query(
+                `UPDATE ratings
+                 SET rating = ?,
+                     updated_at = CURRENT_TIMESTAMP
+                 WHERE user_id = ?
+                 AND store_id = ?`,
+                [
+                    numericRating,
+                    userId,
+                    store_id
+                ]
+            );
+
+            return res.status(200).json({
+                message: "Rating updated successfully"
             });
         }
 
-        // Insert rating
+        // ==========================================
+        // NO EXISTING RATING → INSERT
+        // ==========================================
+
         const [result] = await db.query(
             `INSERT INTO ratings
-            (user_id, store_id, rating)
-            VALUES (?, ?, ?)`,
+             (user_id, store_id, rating)
+             VALUES (?, ?, ?)`,
             [
                 userId,
                 store_id,
@@ -147,82 +168,20 @@ const submitRating = async (req, res) => {
             ]
         );
 
-        res.status(201).json({
+        return res.status(201).json({
             message: "Rating submitted successfully",
             ratingId: result.insertId
         });
 
     } catch (error) {
-        console.error("Submit rating error:", error);
 
-        res.status(500).json({
-            message: "Failed to submit rating"
-        });
-    }
-};
-
-const updateRating = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const storeId = req.params.storeId;
-
-        const {
-            rating
-        } = req.body;
-
-        // Validate rating
-        const numericRating = Number(rating);
-
-        if (
-            !Number.isInteger(numericRating) ||
-            numericRating < 1 ||
-            numericRating > 5
-        ) {
-            return res.status(400).json({
-                message: "Rating must be an integer between 1 and 5"
-            });
-        }
-
-        // Find existing rating
-        const [existingRating] = await db.query(
-            `SELECT id
-             FROM ratings
-             WHERE user_id = ?
-             AND store_id = ?`,
-            [
-                userId,
-                storeId
-            ]
+        console.error(
+            "Submit/update rating error:",
+            error
         );
 
-        if (existingRating.length === 0) {
-            return res.status(404).json({
-                message: "You have not rated this store yet"
-            });
-        }
-
-        // Update rating
-        await db.query(
-            `UPDATE ratings
-             SET rating = ?, updated_at = CURRENT_TIMESTAMP
-             WHERE user_id = ?
-             AND store_id = ?`,
-            [
-                numericRating,
-                userId,
-                storeId
-            ]
-        );
-
-        res.status(200).json({
-            message: "Rating updated successfully"
-        });
-
-    } catch (error) {
-        console.error("Update rating error:", error);
-
         res.status(500).json({
-            message: "Failed to update rating"
+            message: "Failed to submit/update rating"
         });
     }
 };
@@ -310,9 +269,58 @@ const updatePassword = async (req, res) => {
     }
 };
 
+const getStoresById = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const storeId = req.params.storeId;
+
+        const [stores] = await db.query(
+            `SELECT
+               s.id,
+               s.name,
+               s.address,
+               COALESCE(ROUND(AVG(all_ratings.rating), 1), 0) AS average_rating,
+               user_rating.rating AS user_rating
+
+            FROM stores s
+
+            LEFT JOIN ratings all_ratings
+               ON s.id = all_ratings.store_id
+
+            LEFT JOIN ratings user_rating
+               ON s.id = user_rating.store_id
+               AND user_rating.user_id = ?
+            WHERE s.id = ?
+            GROUP BY
+               s.id,
+               s.name,
+               s.address,
+               user_rating.rating`,
+            [userId, storeId]
+        );
+
+        if (stores.length === 0) {
+            return res.status(404).json({
+                message: "Store not found"
+            });
+        }
+
+        res.status(200).json({
+            store: stores[0]
+        });
+
+    } catch (error) {
+        console.error("Get stores by ID error:", error);
+
+        res.status(500).json({
+            message: "Failed to get store"
+        });
+    }
+};
+
 module.exports = {
     getStores,
     submitRating,
-    updateRating,
-    updatePassword
+    updatePassword,
+    getStoresById
 };

@@ -11,7 +11,7 @@ const getDashboard = async (req, res) => {
                 s.name,
                 s.email,
                 s.address,
-                COALESCE(AVG(r.rating), 0) AS average_rating,
+                COALESCE(ROUND(AVG(r.rating), 1), 0) AS average_rating,
                 COUNT(r.id) AS total_ratings
              FROM stores s
              LEFT JOIN ratings r

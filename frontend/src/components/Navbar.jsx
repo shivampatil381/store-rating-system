@@ -20,9 +20,6 @@ function Navbar() {
         {user?.role === "USER" && (
           <>
             <Link to="/user/dashboard">Dashboard</Link>
-
-            <Link to="/user/stores">Stores</Link>
-
             <Link to="/user/password">Change Password</Link>
           </>
         )}
@@ -30,9 +27,6 @@ function Navbar() {
         {user?.role === "OWNER" && (
           <>
             <Link to="/owner/dashboard">Dashboard</Link>
-
-            <Link to="/owner/ratings">Ratings</Link>
-
             <Link to="/owner/password">Change Password</Link>
           </>
         )}
